@@ -1,0 +1,62 @@
+﻿<Page
+    x:Class="ExpandableDetailGridView.Demo.MainPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:ExpandableDetailGridView.Demo"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:controls="using:Control"
+    mc:Ignorable="d">
+    <Page.Resources>
+        <DataTemplate x:Key="GridItemTemplate">
+            <Grid Width="250" Height="250" Background="{Binding BackgroundBrush}">
+                <TextBlock Text="{Binding Title}"/>
+            </Grid>
+        </DataTemplate>
+        <DataTemplate x:Key="DetailTemplate">
+            <Grid Width="450" Height="450" Background="{Binding BackgroundBrush}" VerticalAlignment="Center" HorizontalAlignment="Center">
+                <TextBlock Text="{Binding Title}" VerticalAlignment="Stretch" HorizontalAlignment="Stretch"/>
+            </Grid>
+        </DataTemplate>
+        <DataTemplate x:Key="DetailTemplate2">
+            <Grid Width="450" Height="450" Background="{Binding BackgroundBrush}" VerticalAlignment="Center" HorizontalAlignment="Center">
+                <TextBlock VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
+                    <Run Text="{Binding Title}" />
+                    <Run Text=" " />
+                    <Run Text="{Binding SubTitle}" />
+                </TextBlock>
+            </Grid>
+        </DataTemplate>
+    </Page.Resources>
+
+    <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <!--IsOverviewDataSameAsDetailData="True"-->
+        <controls:ExpandableDetailGridView  
+            Items="{x:Bind TestItems, Mode=OneWay}"
+            DetailRowSpan="2"
+            ItemHeight="250"
+            ItemWidth="250" 
+            DetailItemTemplate="{StaticResource DetailTemplate}"
+            GridItemTemplate="{StaticResource GridItemTemplate}" 
+            IsOverviewDataSameAsDetailData="True"
+            DetailBackground="Gray"
+            Animate="True"/>
+        <!--IsOverviewDataSameAsDetailData="False"-->
+        <controls:ExpandableDetailGridView  Grid.Column="1"
+            Items="{x:Bind TestItems, Mode=OneWay}"
+            DetailRowSpan="2"
+            ItemHeight="250"
+            ItemWidth="250" 
+            DetailItem="{x:Bind DetailItem, Mode=OneWay}"
+            DetailItemTemplate="{StaticResource DetailTemplate2}"
+            GridItemTemplate="{StaticResource GridItemTemplate}" 
+            IsOverviewDataSameAsDetailData="False"
+            DetailBackground="Black"
+            Animate="True"
+            SelectedItemChanged="ExpandableDetailGridView_SelectedItemChanged"/>
+    </Grid>
+</Page>
