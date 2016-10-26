@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Specialized;
+using System.Linq;
 using System.Threading.Tasks;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Media;
-using System.Linq;
 
 namespace Control
 {
@@ -18,7 +19,7 @@ namespace Control
         }
 
         public static readonly DependencyProperty ItemHeightProperty =
-            DependencyProperty.Register("ItemHeight", typeof(int), 
+            DependencyProperty.Register(nameof(ItemHeight), typeof(int), 
                 typeof(ExpandableDetailGridView), new PropertyMetadata(0));
 
 
@@ -29,7 +30,7 @@ namespace Control
         }
 
         public static readonly DependencyProperty ItemWidthProperty =
-            DependencyProperty.Register("ItemWidth", typeof(int), 
+            DependencyProperty.Register(nameof(ItemWidth), typeof(int), 
                 typeof(ExpandableDetailGridView), new PropertyMetadata(0));
 
 
@@ -40,7 +41,7 @@ namespace Control
         }
 
         public static readonly DependencyProperty DetailRowSpanProperty =
-            DependencyProperty.Register("DetailRowSpan", typeof(int), 
+            DependencyProperty.Register(nameof(DetailRowSpan), typeof(int), 
                 typeof(ExpandableDetailGridView), new PropertyMetadata(1));
 
         public Brush DetailBackground
@@ -50,7 +51,7 @@ namespace Control
         }
 
         public static readonly DependencyProperty DetailBackgroundProperty =
-            DependencyProperty.Register("DetailBackground", typeof(Brush), 
+            DependencyProperty.Register(nameof(DetailBackground), typeof(Brush), 
                 typeof(ExpandableDetailGridView), new PropertyMetadata(null));
 
 
@@ -61,12 +62,12 @@ namespace Control
         }
 
         public static readonly DependencyProperty ItemsProperty =
-            DependencyProperty.Register("Items", typeof(IEnumerable), 
+            DependencyProperty.Register(nameof(Items), typeof(IEnumerable), 
                 typeof(ExpandableDetailGridView), new PropertyMetadata(null, OnItemsChanged));
 
         private static void OnItemsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            ((ExpandableDetailGridView)d).HandleItemsChanged();
+            ((ExpandableDetailGridView)d).HandleItemsChanged(e.OldValue as IEnumerable);
         }
 
         public bool IsOverviewDataSameAsDetailData
@@ -76,7 +77,7 @@ namespace Control
         }
 
         public static readonly DependencyProperty IsOverviewDataSameAsDetailDataProperty =
-            DependencyProperty.Register("IsOverviewDataSameAsDetailData", typeof(bool), 
+            DependencyProperty.Register(nameof(IsOverviewDataSameAsDetailData), typeof(bool), 
                 typeof(ExpandableDetailGridView), new PropertyMetadata(true));
 
 
@@ -87,7 +88,7 @@ namespace Control
         }
 
         public static readonly DependencyProperty SelectedItemProperty =
-            DependencyProperty.Register("SelectedItem", typeof(object), 
+            DependencyProperty.Register(nameof(SelectedItem), typeof(object), 
                 typeof(ExpandableDetailGridView), new PropertyMetadata(null));
 
 
@@ -98,7 +99,7 @@ namespace Control
         }
 
         public static readonly DependencyProperty SelectedIndexProperty =
-            DependencyProperty.Register("SelectedIndex", typeof(int), 
+            DependencyProperty.Register(nameof(SelectedIndex), typeof(int), 
                 typeof(ExpandableDetailGridView), new PropertyMetadata(-1));
 
 
@@ -109,7 +110,7 @@ namespace Control
         }
 
         public static readonly DependencyProperty DetailItemProperty =
-            DependencyProperty.Register("DetailItem", typeof(object), 
+            DependencyProperty.Register(nameof(DetailItem), typeof(object), 
                 typeof(ExpandableDetailGridView), new PropertyMetadata(null, OnDetailItemChanged));
 
         private static void OnDetailItemChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -127,7 +128,7 @@ namespace Control
         }
 
         public static readonly DependencyProperty DetailItemTemplateProperty =
-            DependencyProperty.Register("DetailItemTemplate", typeof(DataTemplate), 
+            DependencyProperty.Register(nameof(DetailItemTemplate), typeof(DataTemplate), 
                 typeof(ExpandableDetailGridView), new PropertyMetadata(null));
 
 
@@ -138,7 +139,7 @@ namespace Control
         }
 
         public static readonly DependencyProperty GridItemTemplateProperty =
-            DependencyProperty.Register("GridItemTemplate", typeof(DataTemplate), 
+            DependencyProperty.Register(nameof(GridItemTemplate), typeof(DataTemplate), 
                 typeof(ExpandableDetailGridView), new PropertyMetadata(null));
 
 
@@ -149,7 +150,7 @@ namespace Control
         }
 
         public static readonly DependencyProperty AnimateProperty =
-            DependencyProperty.Register("Animate", typeof(bool), 
+            DependencyProperty.Register(nameof(Animate), typeof(bool), 
                 typeof(ExpandableDetailGridView), new PropertyMetadata(false));
 
 
@@ -160,23 +161,76 @@ namespace Control
         }
 
         public static readonly DependencyProperty DetailGridItemProperty =
-            DependencyProperty.Register("DetailGridItem", typeof(DetailGridItem), 
+            DependencyProperty.Register(nameof(DetailGridItem), typeof(DetailGridItem), 
                 typeof(ExpandableDetailGridView), new PropertyMetadata(null));
-
-
 
         public ExpandableDetailGridView()
         {
             this.InitializeComponent();
         }
 
-        private void HandleItemsChanged()
+        private void HandleItemsChanged(IEnumerable oldValue)
         {
-            //ToDo: Observable collection
+            //If old value was ObservableCollection 
+            //=> no logner interested in its CollectionChanged event
+            if(oldValue is INotifyCollectionChanged)
+            {
+                ((INotifyCollectionChanged)oldValue).CollectionChanged -=
+                    ExpandableDetailGridView_CollectionChanged;
+            }
+
+            LoadGridItems();
+
+            if (Items is INotifyCollectionChanged)
+            {
+                //If current collection is ObservableCollection
+                //=> we need to listen to the CollectionChanged event in order to process the changes
+                ((INotifyCollectionChanged)Items).CollectionChanged += 
+                    ExpandableDetailGridView_CollectionChanged;
+            }
+        }
+
+        private void LoadGridItems()
+        {
             GridView.Items.Clear();
+
             foreach (var item in Items)
             {
                 GridView.Items.Add(item);
+            }
+        }
+
+        private void ExpandableDetailGridView_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        {
+            if(e.Action == NotifyCollectionChangedAction.Add)
+            {
+                foreach (var item in e.NewItems)
+                {
+                    GridView.Items.Add(item);
+                }
+            }
+            else if(e.Action == NotifyCollectionChangedAction.Remove)
+            {
+                foreach (var item in e.OldItems)
+                {
+                    //if current SelectedItem is removed, Hide detail.
+                    if (item == SelectedItem)
+                        HideDetail();
+
+                    GridView.Items.Remove(item);
+                }
+            }
+            else if(e.Action == NotifyCollectionChangedAction.Reset)
+            {
+                LoadGridItems();
+            }
+            else if(e.Action == NotifyCollectionChangedAction.Move)
+            {
+                //ToDo?
+            }
+            else if(e.Action == NotifyCollectionChangedAction.Replace)
+            {
+                //ToDo?
             }
         }
 

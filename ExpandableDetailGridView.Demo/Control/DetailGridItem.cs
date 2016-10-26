@@ -5,8 +5,10 @@ using Windows.UI.Xaml.Input;
 
 namespace Control
 {
+    [TemplatePart(Name = DetailGridItem.HideButtonElement, Type = typeof(FrameworkElement))]
     public class DetailGridItem : GridViewItem
     {
+        private const string HideButtonElement = "ButtonHide";
         public DataTemplate DetailItemTemplate
         {
             get { return (DataTemplate)GetValue(DetailItemTemplateProperty); }
@@ -14,7 +16,7 @@ namespace Control
         }
 
         public static readonly DependencyProperty DetailItemTemplateProperty =
-            DependencyProperty.Register("DetailItemTemplate", 
+            DependencyProperty.Register(nameof(DetailItemTemplate), 
                 typeof(DataTemplate), typeof(DetailGridItem), new PropertyMetadata(null));
 
         public ExpandableDetailGridView Grid { get; set; }
@@ -22,7 +24,7 @@ namespace Control
         protected override void OnApplyTemplate()
         {
             base.OnApplyTemplate();
-            var button = GetTemplateChild("ButtonHide") as ButtonBase;
+            var button = GetTemplateChild(HideButtonElement) as ButtonBase;
             if (button != null)
             {
                 button.Tapped += DetailGridItem_Tapped;
