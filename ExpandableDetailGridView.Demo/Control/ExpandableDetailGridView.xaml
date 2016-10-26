@@ -102,7 +102,7 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="local:DetailGridItem">
                         <Grid HorizontalAlignment="Stretch" 
-                              VerticalAlignment="Stretch" 
+                              VerticalAlignment="Stretch"
                               Background="{TemplateBinding Background}">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
@@ -134,7 +134,8 @@
               HorizontalContentAlignment="Center"
               ItemClick="GridView_ItemClick" 
               SizeChanged="GridView_SizeChanged"
-              ItemTemplate="{Binding GridItemTemplate, ElementName=root}">
+              ItemTemplate="{Binding GridItemTemplate, ElementName=root}"
+              SelectionChanged="GridView_SelectionChanged">
         <GridView.ItemsPanel>
             <ItemsPanelTemplate>
                 <VariableSizedWrapGrid ItemHeight="{Binding ItemHeight, ElementName=root}" 

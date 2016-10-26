@@ -164,6 +164,9 @@ namespace Control
             DependencyProperty.Register(nameof(DetailGridItem), typeof(DetailGridItem), 
                 typeof(ExpandableDetailGridView), new PropertyMetadata(null));
 
+        public event EventHandler SelectedIndexChanged;
+        public event EventHandler SelectedItemChanged;
+
         public ExpandableDetailGridView()
         {
             this.InitializeComponent();
@@ -172,7 +175,7 @@ namespace Control
         private void HandleItemsChanged(IEnumerable oldValue)
         {
             //If old value was ObservableCollection 
-            //=> no logner interested in its CollectionChanged event
+            //=> no longer interested in its CollectionChanged event
             if(oldValue is INotifyCollectionChanged)
             {
                 ((INotifyCollectionChanged)oldValue).CollectionChanged -=
@@ -317,9 +320,6 @@ namespace Control
             }
         }
 
-        public event EventHandler SelectedIndexChanged;
-        public event EventHandler SelectedItemChanged;
-
         private void GridView_SizeChanged(object sender, SizeChangedEventArgs e)
         {
             HideDetail();
@@ -329,6 +329,19 @@ namespace Control
         {
             GridView.Items.Remove(DetailGridItem);
             GridView.SelectedItem = null;
+        }
+
+        private void GridView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if(GridView.SelectedItem is DetailGridItem) 
+            {
+                //When the user taps/clicks the DetailItem, it becomes the SelectedItem of the GridView
+                //The DetailGridItem may not be the selected item in the GridView because in that case
+                //the 'arrow' of the selected GridItem won't be shown (as this arrow is only shown 
+                //on the SelectedItem of the GridView). 
+                //So we have to reset the GridView's SelectedItem to the SelectedItem
+                GridView.SelectedItem = SelectedItem;
+            }
         }
     }
 }
