@@ -6,7 +6,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:controls="using:Control"
-    mc:Ignorable="d">
+    mc:Ignorable="d" x:Name="root">
     <Page.Resources>
         <DataTemplate x:Key="GridItemTemplate">
             <Grid Width="250" Height="250" Background="{Binding BackgroundBrush}">
@@ -35,7 +35,7 @@
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
         <!--IsOverviewDataSameAsDetailData="True"-->
-        <controls:ExpandableDetailGridView  
+        <controls:ExpandableDetailGridView  x:Name="GV1"
             Items="{x:Bind TestItems, Mode=OneWay}"
             DetailRowSpan="2"
             ItemHeight="250"
@@ -46,7 +46,8 @@
             DetailBackground="Gray"
             Animate="True"/>
         <!--IsOverviewDataSameAsDetailData="False"-->
-        <controls:ExpandableDetailGridView  Grid.Column="1"
+        <controls:ExpandableDetailGridView  x:Name="GV2"
+            Grid.Column="1"
             Items="{x:Bind TestItems, Mode=OneWay}"
             DetailRowSpan="2"
             ItemHeight="250"
@@ -54,9 +55,16 @@
             DetailItem="{x:Bind DetailItem, Mode=OneWay}"
             DetailItemTemplate="{StaticResource DetailTemplate2}"
             GridItemTemplate="{StaticResource GridItemTemplate}" 
+            SelectedItem="{Binding SelectedItem, Mode=TwoWay, ElementName=root}"
             IsOverviewDataSameAsDetailData="False"
             DetailBackground="Black"
-            Animate="True"
+            Animate="False"
             SelectedItemChanged="ExpandableDetailGridView_SelectedItemChanged"/>
+
+        <Button Content="Open forth element" Tapped="Button_Tapped"/>
+
+        <Button Content="Open forth element" Tapped="Button_Tapped2" Grid.Column="2"/>
+
+
     </Grid>
 </Page>

@@ -1,14 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Threading.Tasks;
+using System.Linq;
 using Windows.UI.Xaml.Controls;
 
 namespace ExpandableDetailGridView.Demo
 {
     public sealed partial class MainPage : Page, INotifyPropertyChanged
     {
-        public IEnumerable<DataItem> TestItems { get; set; }
+        public List<DataItem> TestItems { get; set; }
 
         private DetailItem detailItem;
 
@@ -24,7 +24,7 @@ namespace ExpandableDetailGridView.Demo
 
         public MainPage()
         {
-            TestItems = DataFactory.LoadData();
+            TestItems = DataFactory.LoadData().ToList();
             this.InitializeComponent();
         }
 
@@ -34,14 +34,39 @@ namespace ExpandableDetailGridView.Demo
 
         private async void ExpandableDetailGridView_SelectedItemChanged(object sender, EventArgs e)
         {
-            await Task.Delay(1000); //Do some backend calls or whatever
-            var item = ((Control.ExpandableDetailGridView)sender).SelectedItem as DataItem;
-            this.DetailItem = new DetailItem()
+            //DetailItem = await DataFactory.GetDetailItemAsync(item);
+        }
+
+        DataItem _SelectedItem;
+        public DataItem SelectedItem
+        {
+            get
             {
-                Title = item.Title,
-                Background = item.Background,
-                SubTitle = "Foo-" + item.Title + "-Bar" 
-            };
+                return _SelectedItem;
+            }
+            set
+            {
+                _SelectedItem = value;
+                LoadDetailItem(value);
+            }
+        }
+
+        private async void LoadDetailItem(DataItem item)
+        {
+            if (item != null)
+                DetailItem = await DataFactory.GetDetailItemAsync(item);
+            else
+                DetailItem = null;
+        }
+
+        private void Button_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
+        {
+            GV1.SelectedItem = this.TestItems.ElementAt(3);
+        }
+
+        private void Button_Tapped2(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
+        {
+            GV2.SelectedItem = this.TestItems.ElementAt(3);
         }
     }
 }

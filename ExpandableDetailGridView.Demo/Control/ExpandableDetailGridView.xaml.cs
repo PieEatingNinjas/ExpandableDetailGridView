@@ -12,6 +12,7 @@ namespace Control
 {
     public sealed partial class ExpandableDetailGridView : UserControl
     {
+        #region DependencyProperties
         public int ItemHeight
         {
             get { return (int)GetValue(ItemHeightProperty); }
@@ -63,12 +64,9 @@ namespace Control
 
         public static readonly DependencyProperty ItemsProperty =
             DependencyProperty.Register(nameof(Items), typeof(IEnumerable), 
-                typeof(ExpandableDetailGridView), new PropertyMetadata(null, OnItemsChanged));
+                typeof(ExpandableDetailGridView), new PropertyMetadata(null, 
+                    (d,e) => ((ExpandableDetailGridView)d).HandleItemsChanged(e.OldValue as IEnumerable)));
 
-        private static void OnItemsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        {
-            ((ExpandableDetailGridView)d).HandleItemsChanged(e.OldValue as IEnumerable);
-        }
 
         public bool IsOverviewDataSameAsDetailData
         {
@@ -77,30 +75,23 @@ namespace Control
         }
 
         public static readonly DependencyProperty IsOverviewDataSameAsDetailDataProperty =
-            DependencyProperty.Register(nameof(IsOverviewDataSameAsDetailData), typeof(bool), 
+            DependencyProperty.Register(nameof(IsOverviewDataSameAsDetailData), typeof(bool),
                 typeof(ExpandableDetailGridView), new PropertyMetadata(true));
 
 
         public object SelectedItem
         {
             get { return (object)GetValue(SelectedItemProperty); }
-            set { SetValue(SelectedItemProperty, value); }
+            set
+            {
+                SetValue(SelectedItemProperty, value);
+            }
         }
 
         public static readonly DependencyProperty SelectedItemProperty =
-            DependencyProperty.Register(nameof(SelectedItem), typeof(object), 
-                typeof(ExpandableDetailGridView), new PropertyMetadata(null));
-
-
-        public int SelectedIndex
-        {
-            get { return (int)GetValue(SelectedIndexProperty); }
-            set { SetValue(SelectedIndexProperty, value); }
-        }
-
-        public static readonly DependencyProperty SelectedIndexProperty =
-            DependencyProperty.Register(nameof(SelectedIndex), typeof(int), 
-                typeof(ExpandableDetailGridView), new PropertyMetadata(-1));
+            DependencyProperty.Register(nameof(SelectedItem), typeof(object),
+                typeof(ExpandableDetailGridView), new PropertyMetadata(null, 
+                    (d,e) => ((ExpandableDetailGridView)d).HandleSelectedItemChanged()));
 
 
         public object DetailItem
@@ -110,13 +101,9 @@ namespace Control
         }
 
         public static readonly DependencyProperty DetailItemProperty =
-            DependencyProperty.Register(nameof(DetailItem), typeof(object), 
-                typeof(ExpandableDetailGridView), new PropertyMetadata(null, OnDetailItemChanged));
-
-        private static void OnDetailItemChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        {
-            ((ExpandableDetailGridView)d).HandleDetailItemChanged();
-        }
+            DependencyProperty.Register(nameof(DetailItem), typeof(object),
+                typeof(ExpandableDetailGridView), new PropertyMetadata(null, 
+                    (d,e) => ((ExpandableDetailGridView)d).HandleDetailItemChanged()));
 
         public DataTemplate DetailItemTemplate
         {
@@ -128,7 +115,7 @@ namespace Control
         }
 
         public static readonly DependencyProperty DetailItemTemplateProperty =
-            DependencyProperty.Register(nameof(DetailItemTemplate), typeof(DataTemplate), 
+            DependencyProperty.Register(nameof(DetailItemTemplate), typeof(DataTemplate),
                 typeof(ExpandableDetailGridView), new PropertyMetadata(null));
 
 
@@ -139,7 +126,7 @@ namespace Control
         }
 
         public static readonly DependencyProperty GridItemTemplateProperty =
-            DependencyProperty.Register(nameof(GridItemTemplate), typeof(DataTemplate), 
+            DependencyProperty.Register(nameof(GridItemTemplate), typeof(DataTemplate),
                 typeof(ExpandableDetailGridView), new PropertyMetadata(null));
 
 
@@ -150,7 +137,7 @@ namespace Control
         }
 
         public static readonly DependencyProperty AnimateProperty =
-            DependencyProperty.Register(nameof(Animate), typeof(bool), 
+            DependencyProperty.Register(nameof(Animate), typeof(bool),
                 typeof(ExpandableDetailGridView), new PropertyMetadata(false));
 
 
@@ -161,15 +148,29 @@ namespace Control
         }
 
         public static readonly DependencyProperty DetailGridItemProperty =
-            DependencyProperty.Register(nameof(DetailGridItem), typeof(DetailGridItem), 
+            DependencyProperty.Register(nameof(DetailGridItem), typeof(DetailGridItem),
                 typeof(ExpandableDetailGridView), new PropertyMetadata(null));
+        #endregion
 
-        public event EventHandler SelectedIndexChanged;
+        bool selectedItemChangedInternally;
+
         public event EventHandler SelectedItemChanged;
 
         public ExpandableDetailGridView()
         {
             this.InitializeComponent();
+        }
+
+        private void HandleSelectedItemChanged()
+        {
+            if (!selectedItemChangedInternally)
+            {
+                if (SelectedItem != null)
+                {
+                    OpenDetailAsync(SelectedItem);
+                    GridView.SelectedItem = SelectedItem;
+                }
+            }
         }
 
         private void HandleItemsChanged(IEnumerable oldValue)
@@ -243,9 +244,17 @@ namespace Control
                 DetailGridItem.DataContext = DetailItem;
         }
 
-        private async void GridView_ItemClick(object sender, ItemClickEventArgs e)
+        private void GridView_ItemClick(object sender, ItemClickEventArgs e)
         {
-            if (e.ClickedItem != null && e.ClickedItem != SelectedItem)
+            if (e.ClickedItem != SelectedItem) //Making sure we don't re-open what's already open
+            {
+                OpenDetailAsync(e.ClickedItem);
+            }
+        }
+
+        private async Task OpenDetailAsync(object selectedItem)
+        {
+            if (selectedItem != null)
             {
                 var wg = GridView.ItemsPanelRoot as VariableSizedWrapGrid;
 
@@ -253,14 +262,14 @@ namespace Control
 
                 var currentIndexOfDetailItem = GridView.Items.IndexOf(DetailGridItem);
 
-                var itemIndex = GridView.Items.IndexOf(e.ClickedItem);
+                var itemIndex = GridView.Items.IndexOf(selectedItem);
 
                 if (currentIndexOfDetailItem > -1 && currentIndexOfDetailItem < itemIndex)
                 {
                     itemIndex--;
                 }
 
-                var row = Math.Min(((int)(itemIndex / itemsPerRow) + 1) * itemsPerRow, 
+                var row = Math.Min(((int)(itemIndex / itemsPerRow) + 1) * itemsPerRow,
                     GridView.Items.Count);
 
                 if (DetailGridItem == null)
@@ -288,7 +297,7 @@ namespace Control
 
                 if (IsOverviewDataSameAsDetailData)
                 {
-                    DetailItem = e.ClickedItem;
+                    DetailItem = selectedItem;
 
                     //Else = user should do it manualy by listening to the SelectedIndexChanged 
                     //or something like that and set the DetailItem manually
@@ -313,10 +322,10 @@ namespace Control
                     itemContainer.SetValue(VariableSizedWrapGrid.RowSpanProperty, DetailRowSpan);
                 }
 
-                SelectedIndex = itemIndex;
-                SelectedItem = e.ClickedItem;
-                SelectedIndexChanged?.Invoke(this, null);
+                selectedItemChangedInternally = true;
+                SelectedItem = selectedItem;
                 SelectedItemChanged?.Invoke(this, null);
+                selectedItemChangedInternally = false;
             }
         }
 
@@ -329,6 +338,9 @@ namespace Control
         {
             GridView.Items.Remove(DetailGridItem);
             GridView.SelectedItem = null;
+            SelectedItem = null;
+            DetailItem = null;
+            SelectedItemChanged?.Invoke(this, null);
         }
 
         private void GridView_SelectionChanged(object sender, SelectionChangedEventArgs e)
